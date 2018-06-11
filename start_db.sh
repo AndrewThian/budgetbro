@@ -1,3 +1,5 @@
+#!/bin/bash
+
 docker run --rm -d \
     --name budgetbro_dev \
     -v /usr/local/docker_mounts/budgetbro_dev:/var/lib/postgresql/data \
