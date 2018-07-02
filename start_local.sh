@@ -1,12 +1,27 @@
 #!/bin/bash
+clear
+
+VOLUME_DIR=/usr/local/docker_mounts/budgetbro_dev
+# provide another path if you do not with to use the default
+if ! [ -z "$1" ]; then
+    VOLUME_DIR=$1
+fi
+
+echo "mounting dataase to $VOLUME_DIR"
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# get current directory and set schema.pgsql
+echo "importing schema from: $DIR/database/schema.sql"
+
+CONTAINER_ID=budgetbro_dev
 
 docker run --rm -d \
-    --name budgetbro_dev \
-    -v /usr/local/docker_mounts/budgetbro_dev:/var/lib/postgresql/data \
-    -e POSTGRES_DB=budgetbro_dev \
-    -e POSTGRES_USER=budgetbro_dev \
+    --name $CONTAINER_ID \
+    -e POSTGRES_DB=$CONTAINER_ID \
+    -e POSTGRES_USER=$CONTAINER_ID \
     -e POSTGRES_PASSWORD=docker \
-    -v /usr/local/docker_mounts/budgetbro_dev:/var/lib/postgresql/data \
+    -v $VOLUME_DIR:/var/lib/postgresql/data \
+    -v $DIR/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql \
     -p 5432:5432 \
     postgres:9.6
     
