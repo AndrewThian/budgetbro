@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"regexp"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/gin-gonic/gin"
@@ -14,7 +15,10 @@ func main() {
 	router := gin.Default()
 	router.Use(reqLogger())
 	router.GET("/", func(context *gin.Context) {
-		context.JSON(200, gin.H{"app": "budgetbro API"})
+		context.JSON(200, gin.H{
+			"app":     "budgetbro API",
+			"timeNow": time.Now(),
+		})
 	})
 	router.POST("/fulfillment")
 	router.Run()
