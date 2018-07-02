@@ -7,6 +7,24 @@ always remember to check and clear any background running postgres servers with:
 1. % lsof -n -i:5432 | grep LISTEN
 2. % pkill postgres
 ```
+
+---
+
+
+## 📂 Server:
+
+__How to run:__
+
+Use the live-reloading util:
+```bash
+gin run main.go
+```
+
+__Packages:__
+
+- HTTP web framework: [gin-gonic/gin](https://github.com/gin-gonic/gin)
+- Live reloading util: [codegangsta/gin](https://github.com/codegangsta/gin)
+
 ---
 
 ## 🔧Database:
@@ -48,3 +66,5 @@ Some important commands that you might need to manually access your data.
     host $ docker cp schema.sql:budgetbro_dev/schema.sql
     container $ psql -U budgetbro_dev < schema.sql
     ```
+
+---
