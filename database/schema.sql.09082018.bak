@@ -69,7 +69,9 @@ SET default_with_oids = false;
 
 CREATE TABLE public.categories (
     id integer NOT NULL,
+    user_id integer NOT NULL,
     name text DEFAULT ''::text NOT NULL,
+    p_amount money DEFAULT '$0.00'::money NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -82,6 +84,13 @@ ALTER TABLE public.categories OWNER TO budgetbro_dev;
 --
 
 COMMENT ON COLUMN public.categories.name IS 'category name';
+
+
+--
+-- Name: COLUMN categories.p_amount; Type: COMMENT; Schema: public; Owner: budgetbro_dev
+--
+
+COMMENT ON COLUMN public.categories.p_amount IS 'planned amount for specific category';
 
 
 --
@@ -106,6 +115,42 @@ ALTER SEQUENCE public.categories_id_seq OWNED BY public.categories.id;
 
 
 --
+-- Name: expense_categories; Type: TABLE; Schema: public; Owner: budgetbro_dev
+--
+
+CREATE TABLE public.expense_categories (
+    id integer NOT NULL,
+    categories_id integer NOT NULL,
+    expenses_id integer NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.expense_categories OWNER TO budgetbro_dev;
+
+--
+-- Name: expense_categories_id_seq; Type: SEQUENCE; Schema: public; Owner: budgetbro_dev
+--
+
+CREATE SEQUENCE public.expense_categories_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.expense_categories_id_seq OWNER TO budgetbro_dev;
+
+--
+-- Name: expense_categories_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: budgetbro_dev
+--
+
+ALTER SEQUENCE public.expense_categories_id_seq OWNED BY public.expense_categories.id;
+
+
+--
 -- Name: expenses; Type: TABLE; Schema: public; Owner: budgetbro_dev
 --
 
@@ -115,9 +160,7 @@ CREATE TABLE public.expenses (
     amount money DEFAULT '$0.00'::money NOT NULL,
     date timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    users_id integer NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    user_cat_id integer
+    user_id integer NOT NULL
 );
 
 
@@ -156,50 +199,6 @@ ALTER TABLE public.expenses_id_seq OWNER TO budgetbro_dev;
 --
 
 ALTER SEQUENCE public.expenses_id_seq OWNED BY public.expenses.id;
-
-
---
--- Name: user_categories; Type: TABLE; Schema: public; Owner: budgetbro_dev
---
-
-CREATE TABLE public.user_categories (
-    id integer NOT NULL,
-    users_id integer NOT NULL,
-    categories_id integer NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    b_amount money DEFAULT '$0.00'::money NOT NULL
-);
-
-
-ALTER TABLE public.user_categories OWNER TO budgetbro_dev;
-
---
--- Name: COLUMN user_categories.b_amount; Type: COMMENT; Schema: public; Owner: budgetbro_dev
---
-
-COMMENT ON COLUMN public.user_categories.b_amount IS 'budget amount set by the user in a specific user_category';
-
-
---
--- Name: user_categories_id_seq; Type: SEQUENCE; Schema: public; Owner: budgetbro_dev
---
-
-CREATE SEQUENCE public.user_categories_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.user_categories_id_seq OWNER TO budgetbro_dev;
-
---
--- Name: user_categories_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: budgetbro_dev
---
-
-ALTER SEQUENCE public.user_categories_id_seq OWNED BY public.user_categories.id;
 
 
 --
@@ -246,17 +245,17 @@ ALTER TABLE ONLY public.categories ALTER COLUMN id SET DEFAULT nextval('public.c
 
 
 --
+-- Name: expense_categories id; Type: DEFAULT; Schema: public; Owner: budgetbro_dev
+--
+
+ALTER TABLE ONLY public.expense_categories ALTER COLUMN id SET DEFAULT nextval('public.expense_categories_id_seq'::regclass);
+
+
+--
 -- Name: expenses id; Type: DEFAULT; Schema: public; Owner: budgetbro_dev
 --
 
 ALTER TABLE ONLY public.expenses ALTER COLUMN id SET DEFAULT nextval('public.expenses_id_seq'::regclass);
-
-
---
--- Name: user_categories id; Type: DEFAULT; Schema: public; Owner: budgetbro_dev
---
-
-ALTER TABLE ONLY public.user_categories ALTER COLUMN id SET DEFAULT nextval('public.user_categories_id_seq'::regclass);
 
 
 --
@@ -275,19 +274,19 @@ ALTER TABLE ONLY public.categories
 
 
 --
+-- Name: expense_categories expense_categories_pkey; Type: CONSTRAINT; Schema: public; Owner: budgetbro_dev
+--
+
+ALTER TABLE ONLY public.expense_categories
+    ADD CONSTRAINT expense_categories_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: expenses expenses_pkey; Type: CONSTRAINT; Schema: public; Owner: budgetbro_dev
 --
 
 ALTER TABLE ONLY public.expenses
     ADD CONSTRAINT expenses_pkey PRIMARY KEY (id);
-
-
---
--- Name: user_categories user_categories_pkey; Type: CONSTRAINT; Schema: public; Owner: budgetbro_dev
---
-
-ALTER TABLE ONLY public.user_categories
-    ADD CONSTRAINT user_categories_pkey PRIMARY KEY (id);
 
 
 --
@@ -304,13 +303,6 @@ ALTER TABLE ONLY public.users
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
-
-
---
--- Name: categories_name_idx; Type: INDEX; Schema: public; Owner: budgetbro_dev
---
-
-CREATE UNIQUE INDEX categories_name_idx ON public.categories USING btree (name);
 
 
 --
@@ -335,18 +327,34 @@ CREATE TRIGGER set_timestamp BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE 
 
 
 --
--- Name: user_categories set_timestamp; Type: TRIGGER; Schema: public; Owner: budgetbro_dev
+-- Name: expense_categories set_timestamp; Type: TRIGGER; Schema: public; Owner: budgetbro_dev
 --
 
-CREATE TRIGGER set_timestamp BEFORE UPDATE ON public.user_categories FOR EACH ROW EXECUTE PROCEDURE public.trigger_set_timestamp();
+CREATE TRIGGER set_timestamp BEFORE UPDATE ON public.expense_categories FOR EACH ROW EXECUTE PROCEDURE public.trigger_set_timestamp();
 
 
 --
--- Name: expenses expenses_user_cat_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: budgetbro_dev
+-- Name: categories categories_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: budgetbro_dev
 --
 
-ALTER TABLE ONLY public.expenses
-    ADD CONSTRAINT expenses_user_cat_id_fkey FOREIGN KEY (user_cat_id) REFERENCES public.user_categories(id);
+ALTER TABLE ONLY public.categories
+    ADD CONSTRAINT categories_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: expense_categories expense_categories_categories_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: budgetbro_dev
+--
+
+ALTER TABLE ONLY public.expense_categories
+    ADD CONSTRAINT expense_categories_categories_id_fkey FOREIGN KEY (categories_id) REFERENCES public.categories(id);
+
+
+--
+-- Name: expense_categories expense_categories_expenses_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: budgetbro_dev
+--
+
+ALTER TABLE ONLY public.expense_categories
+    ADD CONSTRAINT expense_categories_expenses_id_fkey FOREIGN KEY (expenses_id) REFERENCES public.expenses(id);
 
 
 --
@@ -354,23 +362,7 @@ ALTER TABLE ONLY public.expenses
 --
 
 ALTER TABLE ONLY public.expenses
-    ADD CONSTRAINT expenses_user_id_fkey FOREIGN KEY (users_id) REFERENCES public.users(id);
-
-
---
--- Name: user_categories user_categories_categories_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: budgetbro_dev
---
-
-ALTER TABLE ONLY public.user_categories
-    ADD CONSTRAINT user_categories_categories_id_fkey FOREIGN KEY (categories_id) REFERENCES public.categories(id);
-
-
---
--- Name: user_categories user_categories_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: budgetbro_dev
---
-
-ALTER TABLE ONLY public.user_categories
-    ADD CONSTRAINT user_categories_user_id_fkey FOREIGN KEY (users_id) REFERENCES public.users(id);
+    ADD CONSTRAINT expenses_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
